@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --bg: 246 241 232;
+    --bg-alt: 255 253 248;
+    --surface: 255 255 255;
+    --surface-elevated: 255 255 255;
+    --text: 24 29 33;
+    --muted: 102 112 126;
+    --border: 229 221 209;
+    --accent: 18 120 104;
+    --accent-strong: 12 88 76;
+    --accent-soft: 218 245 236;
+    --warning: 242 153 74;
+    --danger: 207 76 76;
+    --chart-1: 18 120 104;
+    --chart-2: 61 151 178;
+    --chart-3: 242 153 74;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg: 13 17 20;
+    --bg-alt: 18 23 28;
+    --surface: 22 27 32;
+    --surface-elevated: 26 33 39;
+    --text: 236 240 244;
+    --muted: 151 162 173;
+    --border: 41 50 59;
+    --accent: 88 214 186;
+    --accent-strong: 58 164 144;
+    --accent-soft: 20 52 47;
+    --warning: 242 153 74;
+    --danger: 231 105 105;
+    --chart-1: 88 214 186;
+    --chart-2: 111 183 214;
+    --chart-3: 242 153 74;
+  }
+
+  * {
+    border-color: rgb(var(--border));
+  }
+
+  body {
+    @apply bg-[rgb(var(--bg))] text-[rgb(var(--text))] antialiased;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  code,
+  pre {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+}
+
+@layer utilities {
+  .bg-app {
+    background: radial-gradient(
+        circle at 10% 10%,
+        rgba(var(--accent), 0.08),
+        transparent 55%
+      ),
+      radial-gradient(
+        circle at 90% 20%,
+        rgba(var(--warning), 0.12),
+        transparent 50%
+      ),
+      linear-gradient(160deg, rgba(var(--bg-alt), 0.8), rgba(var(--bg), 0.95));
+  }
+}
