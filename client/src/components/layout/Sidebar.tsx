@@ -19,9 +19,19 @@ const navItems = [
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
+  basePath?: string;
+  isDemo?: boolean;
 };
 
-export default function Sidebar({ open, onClose }: SidebarProps) {
+const buildPath = (basePath: string, to: string) =>
+  basePath ? (to === "/" ? basePath : `${basePath}${to}`) : to;
+
+export default function Sidebar({
+  open,
+  onClose,
+  basePath = "",
+  isDemo = false,
+}: SidebarProps) {
   return (
     <>
       <div
@@ -44,6 +54,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <p className="text-lg font-semibold text-[rgb(var(--text))]">
             Produtividade pessoal
           </p>
+          {isDemo ? (
+            <span className="mt-2 inline-flex items-center rounded-full bg-[rgba(var(--accent),0.2)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
+              Demo
+            </span>
+          ) : null}
         </div>
         <nav className="flex flex-1 flex-col gap-2">
           {navItems.map((item) => {
@@ -51,7 +66,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             return (
               <NavLink
                 key={item.to}
-                to={item.to}
+                to={buildPath(basePath, item.to)}
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition",

@@ -3,11 +3,14 @@ import Card from "../components/ui/Card";
 import { useAuthStore } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
 import { api } from "../lib/api";
+import { demoUser, useDemoMode } from "../lib/demo";
 
 const defaultCards = ["summary", "tasks", "habits", "goals", "analytics"];
 
 export default function SettingsPage() {
-  const user = useAuthStore((state) => state.user);
+  const isDemo = useDemoMode();
+  const authUser = useAuthStore((state) => state.user);
+  const user = isDemo ? demoUser : authUser;
   const { mode, toggle } = useThemeStore();
 
   return (
@@ -25,7 +28,12 @@ export default function SettingsPage() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => api.updateLayout({ cards: defaultCards })}
+            onClick={() => {
+              if (!isDemo) {
+                void api.updateLayout({ cards: defaultCards });
+              }
+            }}
+            disabled={isDemo}
           >
             Resetar layout
           </Button>

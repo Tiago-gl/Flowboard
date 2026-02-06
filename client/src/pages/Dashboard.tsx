@@ -28,6 +28,7 @@ import { GripVertical, Sparkles } from "lucide-react";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import { api } from "../lib/api";
+import { demoAnalytics, demoHabits, demoLayout, demoTasks, demoGoals, useDemoMode } from "../lib/demo";
 import type { Goal, Habit, Task, WeeklyAnalytics } from "../lib/schemas";
 
 const defaultCards = ["summary", "tasks", "habits", "goals", "analytics"];
@@ -35,21 +36,24 @@ const defaultCards = ["summary", "tasks", "habits", "goals", "analytics"];
 type SortableCardProps = {
   id: string;
   children: React.ReactNode;
+  disabled?: boolean;
 };
 
-function SortableCard({ id, children }: SortableCardProps) {
+function SortableCard({ id, children, disabled = false }: SortableCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
+    useSortable({ id, disabled });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
   return (
     <div ref={setNodeRef} style={style} className="relative">
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full bg-[rgba(var(--bg),0.7)] px-2 py-1 text-xs text-[rgb(var(--muted))]">
-        <GripVertical size={14} />
-        Arraste
-      </div>
+      {!disabled ? (
+        <div className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full bg-[rgba(var(--bg),0.7)] px-2 py-1 text-xs text-[rgb(var(--muted))]">
+          <GripVertical size={14} />
+          Arraste
+        </div>
+      ) : null}
       <div {...attributes} {...listeners}>
         {children}
       </div>
@@ -58,6 +62,7 @@ function SortableCard({ id, children }: SortableCardProps) {
 }
 
 export default function DashboardPage() {
+  const isDemo = useDemoMode();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -76,6 +81,15 @@ export default function DashboardPage() {
     let active = true;
     const load = async () => {
       setLoading(true);
+      if (isDemo) {
+        setTasks(demoTasks.slice(0, 5));
+        setHabits(demoHabits.slice(0, 5));
+        setGoals(demoGoals.slice(0, 5));
+        setAnalytics(demoAnalytics);
+        setCards(demoLayout.cards);
+        setLoading(false);
+        return;
+      }
       try {
         const [tasksData, habitsData, goalsData, analyticsData, layout] =
           await Promise.all([
@@ -103,7 +117,7 @@ export default function DashboardPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isDemo]);
 
   const summary = useMemo(() => {
     const done = tasks.filter((task) => task.status === "DONE").length;
@@ -125,7 +139,9 @@ export default function DashboardPage() {
       const oldIndex = items.indexOf(activeId);
       const newIndex = items.indexOf(overId);
       const next = arrayMove(items, oldIndex, newIndex);
-      void api.updateLayout({ cards: next }).catch(() => undefined);
+      if (!isDemo) {
+        void api.updateLayout({ cards: next }).catch(() => undefined);
+      }
       return next;
     });
   };
@@ -380,12 +396,12 @@ export default function DashboardPage() {
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
+      onDragEnd={isDemo ? undefined : handleDragEnd}
     >
       <SortableContext items={cards}>
         <div className="grid gap-6 lg:grid-cols-2">
           {cards.map((id) => (
-            <SortableCard key={id} id={id}>
+            <SortableCard key={id} id={id} disabled={isDemo}>
               {cardContent[id]}
             </SortableCard>
           ))}

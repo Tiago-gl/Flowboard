@@ -10,6 +10,7 @@ import Select from "../components/ui/Select";
 import Badge from "../components/ui/Badge";
 import DataTable from "../components/table/DataTable";
 import { api, ApiError } from "../lib/api";
+import { demoGoals, useDemoMode } from "../lib/demo";
 import { GoalFormSchema, GoalStatusEnum } from "../lib/schemas";
 import type { Goal, GoalFormValues } from "../lib/schemas";
 
@@ -19,6 +20,7 @@ const formatDate = (value?: string | null) => {
 };
 
 export default function GoalsPage() {
+  const isDemo = useDemoMode();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +29,11 @@ export default function GoalsPage() {
   const loadGoals = async () => {
     setLoading(true);
     setError(null);
+    if (isDemo) {
+      setGoals(demoGoals);
+      setLoading(false);
+      return;
+    }
     try {
       const response = await api.getGoals({ pageSize: 100 });
       setGoals(response.items);
@@ -39,9 +46,10 @@ export default function GoalsPage() {
 
   useEffect(() => {
     void loadGoals();
-  }, []);
+  }, [isDemo]);
 
   const handleSubmit = async (values: GoalFormValues) => {
+    if (isDemo) return;
     const payload = {
       ...values,
       targetValue: Number(values.targetValue),
@@ -57,8 +65,8 @@ export default function GoalsPage() {
     await loadGoals();
   };
 
-  const columns = useMemo<ColumnDef<Goal>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<Goal>[]>(() => {
+    const base: ColumnDef<Goal>[] = [
       {
         accessorKey: "title",
         header: "Meta",
@@ -91,7 +99,9 @@ export default function GoalsPage() {
           </span>
         ),
       },
-      {
+    ];
+    if (!isDemo) {
+      base.push({
         id: "actions",
         header: "",
         cell: ({ row }) => (
@@ -115,10 +125,10 @@ export default function GoalsPage() {
             </Button>
           </div>
         ),
-      },
-    ],
-    []
-  );
+      });
+    }
+    return base;
+  }, [isDemo]);
 
   const form = useForm({
     defaultValues: {
@@ -158,6 +168,11 @@ export default function GoalsPage() {
         <p className="text-sm text-[rgb(var(--muted))]">
           Defina objetivos semanais claros.
         </p>
+        {isDemo ? (
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
+            Demo somente leitura
+          </p>
+        ) : null}
         <form
           className="mt-6 space-y-4"
           onSubmit={(event) => {
@@ -176,6 +191,7 @@ export default function GoalsPage() {
                   placeholder="Ex: 10 horas de estudo"
                   hasError={field.state.meta.errors.length > 0}
                   className="mt-2"
+                  disabled={isDemo}
                 />
                 {field.state.meta.errors.length > 0 ? (
                   <p className="mt-1 text-xs text-[rgb(var(--danger))]">
@@ -198,6 +214,7 @@ export default function GoalsPage() {
                     }
                     onBlur={field.handleBlur}
                     className="mt-2"
+                    disabled={isDemo}
                   />
                 </label>
               )}
@@ -214,6 +231,7 @@ export default function GoalsPage() {
                     }
                     onBlur={field.handleBlur}
                     className="mt-2"
+                    disabled={isDemo}
                   />
                 </label>
               )}
@@ -229,6 +247,7 @@ export default function GoalsPage() {
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     className="mt-2"
+                    disabled={isDemo}
                   />
                 </label>
               )}
@@ -243,6 +262,7 @@ export default function GoalsPage() {
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     className="mt-2"
+                    disabled={isDemo}
                   />
                 </label>
               )}
@@ -261,6 +281,7 @@ export default function GoalsPage() {
                   }
                   onBlur={field.handleBlur}
                   className="mt-2"
+                  disabled={isDemo}
                 >
                   {GoalStatusEnum.options.map((option) => (
                     <option key={option} value={option}>
@@ -272,7 +293,7 @@ export default function GoalsPage() {
             )}
           </form.Field>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit">
+            <Button type="submit" disabled={isDemo}>
               {form.state.isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
             {editing ? (
@@ -280,6 +301,7 @@ export default function GoalsPage() {
                 type="button"
                 variant="secondary"
                 onClick={() => setEditing(null)}
+                disabled={isDemo}
               >
                 Cancelar
               </Button>

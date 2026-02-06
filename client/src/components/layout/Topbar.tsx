@@ -5,11 +5,18 @@ import Button from "../ui/Button";
 
 type TopbarProps = {
   onOpenSidebar: () => void;
+  isDemo?: boolean;
+  demoUserName?: string;
 };
 
-export default function Topbar({ onOpenSidebar }: TopbarProps) {
+export default function Topbar({
+  onOpenSidebar,
+  isDemo = false,
+  demoUserName,
+}: TopbarProps) {
   const { user, logout } = useAuthStore();
   const { mode, toggle } = useThemeStore();
+  const displayName = isDemo ? demoUserName ?? "Visitante" : user?.name ?? "Produtivo";
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
@@ -24,9 +31,14 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
         <div>
           <p className="text-sm text-[rgb(var(--muted))]">Bem-vindo,</p>
           <p className="text-lg font-semibold text-[rgb(var(--text))]">
-            {user?.name ?? "Produtivo"}
+            {displayName}
           </p>
         </div>
+        {isDemo ? (
+          <span className="rounded-full border border-[rgba(var(--accent),0.3)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
+            Modo demo
+          </span>
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" onClick={toggle} className="rounded-2xl">
@@ -35,10 +47,12 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
             {mode === "light" ? "Dark" : "Light"}
           </span>
         </Button>
-        <Button variant="ghost" onClick={logout} className="rounded-2xl">
-          <LogOut size={18} />
-          <span className="text-sm font-medium">Sair</span>
-        </Button>
+        {isDemo ? null : (
+          <Button variant="ghost" onClick={logout} className="rounded-2xl">
+            <LogOut size={18} />
+            <span className="text-sm font-medium">Sair</span>
+          </Button>
+        )}
       </div>
     </header>
   );

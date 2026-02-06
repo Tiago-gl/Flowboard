@@ -10,10 +10,12 @@ import Select from "../components/ui/Select";
 import Badge from "../components/ui/Badge";
 import DataTable from "../components/table/DataTable";
 import { api, ApiError } from "../lib/api";
+import { demoHabits, useDemoMode } from "../lib/demo";
 import { HabitFormSchema, HabitFrequencyEnum } from "../lib/schemas";
 import type { Habit, HabitFormValues } from "../lib/schemas";
 
 export default function HabitsPage() {
+  const isDemo = useDemoMode();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +24,11 @@ export default function HabitsPage() {
   const loadHabits = async () => {
     setLoading(true);
     setError(null);
+    if (isDemo) {
+      setHabits(demoHabits);
+      setLoading(false);
+      return;
+    }
     try {
       const response = await api.getHabits({ pageSize: 100 });
       setHabits(response.items);
@@ -34,9 +41,10 @@ export default function HabitsPage() {
 
   useEffect(() => {
     void loadHabits();
-  }, []);
+  }, [isDemo]);
 
   const handleSubmit = async (values: HabitFormValues) => {
+    if (isDemo) return;
     const payload = {
       ...values,
       targetPerWeek: values.targetPerWeek ? Number(values.targetPerWeek) : null,
@@ -50,8 +58,8 @@ export default function HabitsPage() {
     await loadHabits();
   };
 
-  const columns = useMemo<ColumnDef<Habit>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<Habit>[]>(() => {
+    const base: ColumnDef<Habit>[] = [
       {
         accessorKey: "name",
         header: "Habito",
@@ -77,7 +85,9 @@ export default function HabitsPage() {
           </Badge>
         ),
       },
-      {
+    ];
+    if (!isDemo) {
+      base.push({
         id: "actions",
         header: "",
         cell: ({ row }) => (
@@ -114,10 +124,10 @@ export default function HabitsPage() {
             </Button>
           </div>
         ),
-      },
-    ],
-    []
-  );
+      });
+    }
+    return base;
+  }, [isDemo]);
 
   const form = useForm({
     defaultValues: {
@@ -151,6 +161,11 @@ export default function HabitsPage() {
         <p className="text-sm text-[rgb(var(--muted))]">
           Habitue-se a novas rotinas.
         </p>
+        {isDemo ? (
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
+            Demo somente leitura
+          </p>
+        ) : null}
         <form
           className="mt-6 space-y-4"
           onSubmit={(event) => {
@@ -169,6 +184,7 @@ export default function HabitsPage() {
                   placeholder="Ex: Caminhar 30 min"
                   hasError={field.state.meta.errors.length > 0}
                   className="mt-2"
+                  disabled={isDemo}
                 />
                 {field.state.meta.errors.length > 0 ? (
                   <p className="mt-1 text-xs text-[rgb(var(--danger))]">
@@ -192,6 +208,7 @@ export default function HabitsPage() {
                     }
                     onBlur={field.handleBlur}
                     className="mt-2"
+                    disabled={isDemo}
                   >
                     {HabitFrequencyEnum.options.map((option) => (
                       <option key={option} value={option}>
@@ -214,13 +231,14 @@ export default function HabitsPage() {
                     }
                     onBlur={field.handleBlur}
                     className="mt-2"
+                    disabled={isDemo}
                   />
                 </label>
               )}
             </form.Field>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit">
+            <Button type="submit" disabled={isDemo}>
               {form.state.isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
             {editing ? (
@@ -228,6 +246,7 @@ export default function HabitsPage() {
                 type="button"
                 variant="secondary"
                 onClick={() => setEditing(null)}
+                disabled={isDemo}
               >
                 Cancelar
               </Button>

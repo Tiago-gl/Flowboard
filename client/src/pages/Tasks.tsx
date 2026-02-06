@@ -10,6 +10,7 @@ import Select from "../components/ui/Select";
 import Badge from "../components/ui/Badge";
 import DataTable from "../components/table/DataTable";
 import { api, ApiError } from "../lib/api";
+import { demoTasks, useDemoMode } from "../lib/demo";
 import {
   TaskFormSchema,
   TaskPriorityEnum,
@@ -23,6 +24,7 @@ const formatDate = (value?: string | null) => {
 };
 
 export default function TasksPage() {
+  const isDemo = useDemoMode();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,11 @@ export default function TasksPage() {
   const loadTasks = async () => {
     setLoading(true);
     setError(null);
+    if (isDemo) {
+      setTasks(demoTasks);
+      setLoading(false);
+      return;
+    }
     try {
       const response = await api.getTasks({ pageSize: 100 });
       setTasks(response.items);
@@ -43,9 +50,10 @@ export default function TasksPage() {
 
   useEffect(() => {
     void loadTasks();
-  }, []);
+  }, [isDemo]);
 
   const handleSubmit = async (values: TaskFormValues) => {
+    if (isDemo) return;
     const payload = {
       ...values,
       description: values.description?.trim() || null,
@@ -60,8 +68,8 @@ export default function TasksPage() {
     await loadTasks();
   };
 
-  const columns = useMemo<ColumnDef<Task>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<Task>[]>(() => {
+    const base: ColumnDef<Task>[] = [
       {
         accessorKey: "title",
         header: "Titulo",
@@ -110,7 +118,9 @@ export default function TasksPage() {
           </span>
         ),
       },
-      {
+    ];
+    if (!isDemo) {
+      base.push({
         id: "actions",
         header: "",
         cell: ({ row }) => (
@@ -134,10 +144,10 @@ export default function TasksPage() {
             </Button>
           </div>
         ),
-      },
-    ],
-    []
-  );
+      });
+    }
+    return base;
+  }, [isDemo]);
 
   const form = useForm({
     defaultValues: {
@@ -175,6 +185,11 @@ export default function TasksPage() {
         <p className="text-sm text-[rgb(var(--muted))]">
           Organize o que precisa ser entregue.
         </p>
+        {isDemo ? (
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
+            Demo somente leitura
+          </p>
+        ) : null}
         <form
           key={editing?.id ?? "new"}
           className="mt-6 space-y-4"
@@ -194,6 +209,7 @@ export default function TasksPage() {
                   placeholder="Ex: Revisar backlog"
                   hasError={field.state.meta.errors.length > 0}
                   className="mt-2"
+                  disabled={isDemo}
                 />
                 {field.state.meta.errors.length > 0 ? (
                   <p className="mt-1 text-xs text-[rgb(var(--danger))]">
@@ -213,6 +229,7 @@ export default function TasksPage() {
                   onBlur={field.handleBlur}
                   placeholder="Notas adicionais"
                   className="mt-2"
+                  disabled={isDemo}
                 />
               </label>
             )}
@@ -231,6 +248,7 @@ export default function TasksPage() {
                       }
                       onBlur={field.handleBlur}
                       className="mt-2"
+                      disabled={isDemo}
                     >
                     {TaskStatusEnum.options.map((option) => (
                       <option key={option} value={option}>
@@ -254,6 +272,7 @@ export default function TasksPage() {
                       }
                       onBlur={field.handleBlur}
                       className="mt-2"
+                      disabled={isDemo}
                     >
                     {TaskPriorityEnum.options.map((option) => (
                       <option key={option} value={option}>
@@ -275,12 +294,13 @@ export default function TasksPage() {
                   onChange={(event) => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}
                   className="mt-2"
+                  disabled={isDemo}
                 />
               </label>
             )}
           </form.Field>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit">
+            <Button type="submit" disabled={isDemo}>
               {form.state.isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
             {editing ? (
@@ -288,6 +308,7 @@ export default function TasksPage() {
                 type="button"
                 variant="secondary"
                 onClick={() => setEditing(null)}
+                disabled={isDemo}
               >
                 Cancelar
               </Button>

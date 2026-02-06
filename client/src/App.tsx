@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import AppLoader from "./components/ui/AppLoader";
 import { api } from "./lib/api";
+import { demoUser } from "./lib/demo";
 import { applyTheme, useThemeStore } from "./store/themeStore";
 import { useAuthStore } from "./store/authStore";
 import AuthPage from "./pages/Auth";
@@ -21,12 +22,18 @@ const publicRoutes = (
 export default function App() {
   const { token, user, status, setUser, setStatus, logout } = useAuthStore();
   const { mode } = useThemeStore();
+  const { pathname } = useLocation();
+  const isDemo = pathname.startsWith("/demo");
 
   useEffect(() => {
     applyTheme(mode);
   }, [mode]);
 
   useEffect(() => {
+    if (isDemo) {
+      setStatus("idle");
+      return;
+    }
     let active = true;
     const loadUser = async () => {
       if (!token) {
@@ -55,7 +62,22 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [token, user, setUser, setStatus, logout]);
+  }, [token, user, setUser, setStatus, logout, isDemo]);
+
+  if (isDemo) {
+    return (
+      <AppShell basePath="/demo" isDemo demoUserName={demoUser.name}>
+        <Routes>
+          <Route path="/demo" element={<DashboardPage />} />
+          <Route path="/demo/tarefas" element={<TasksPage />} />
+          <Route path="/demo/habitos" element={<HabitsPage />} />
+          <Route path="/demo/metas" element={<GoalsPage />} />
+          <Route path="/demo/ajustes" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/demo" replace />} />
+        </Routes>
+      </AppShell>
+    );
+  }
 
   if (!token) {
     return publicRoutes;
