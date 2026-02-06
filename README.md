@@ -14,7 +14,7 @@ Flowboard e um dashboard Notion-lite para tarefas, habitos e metas semanais. O u
 - dnd-kit: drag and drop acessivel para layout.
 - Recharts: visualizacoes simples e responsivas.
 - Fastify: API rapida e opinativa para CRUD.
-- Prisma ORM + SQLite: modelagem tipada e banco leve para ambiente local.
+- Prisma ORM + PostgreSQL (Supabase): modelagem tipada e banco online.
 
 Decisao adicional: Prisma 6.x foi adotado por estabilidade do CLI no ambiente Windows, mantendo compatibilidade com os requisitos do projeto.
 
@@ -122,7 +122,7 @@ npm run dev
 
 ### Variaveis de ambiente (server/.env)
 ```
-DATABASE_URL="file:./dev.db"
+DB_CONNECTION="postgresql://..."
 JWT_SECRET="change-me"
 CORS_ORIGIN="http://localhost:5173"
 PORT="4000"
