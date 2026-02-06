@@ -127,12 +127,3 @@ JWT_SECRET="change-me"
 CORS_ORIGIN="http://localhost:5173"
 PORT="4000"
 ```
-
-## 11. Checklist de qualidade
-- [x] Todas as telas descritas foram implementadas.
-- [x] Todas as tabelas definidas foram mapeadas no Prisma.
-- [x] Prisma reflete fielmente ao banco.
-- [x] Zod usado em todas as validacoes.
-- [x] TanStack Form em formularios principais.
-- [x] TanStack Table em listagens.
-- [x] README completo conforme exigencias.
