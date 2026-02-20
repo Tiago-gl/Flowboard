@@ -120,8 +120,8 @@ export default function DashboardPage() {
   }, [isDemo]);
 
   const summary = useMemo(() => {
-    const done = tasks.filter((task) => task.status === "DONE").length;
-    const pending = tasks.filter((task) => task.status !== "DONE").length;
+    const done = tasks.filter((task) => task.status === "FEITO").length;
+    const pending = tasks.filter((task) => task.status !== "FEITO").length;
     return {
       done,
       pending,

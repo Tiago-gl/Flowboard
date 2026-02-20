@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { zodFormValidator } from "../lib/form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Calendar } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -50,19 +50,24 @@ export default function GoalsPage() {
 
   const handleSubmit = async (values: GoalFormValues) => {
     if (isDemo) return;
-    const payload = {
-      ...values,
-      targetValue: Number(values.targetValue),
-      currentValue: Number(values.currentValue ?? 0),
-      weekStart: new Date(values.weekStart).toISOString(),
-    };
-    if (editing) {
-      await api.updateGoal(editing.id, payload);
-    } else {
-      await api.createGoal(payload);
+    setError(null);
+    try {
+      const payload = {
+        ...values,
+        targetValue: Number(values.targetValue),
+        currentValue: Number(values.currentValue ?? 0),
+        weekStart: new Date(values.weekStart).toISOString(),
+      };
+      if (editing) {
+        await api.updateGoal(editing.id, payload);
+      } else {
+        await api.createGoal(payload);
+      }
+      setEditing(null);
+      await loadGoals();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Erro ao salvar meta.");
     }
-    setEditing(null);
-    await loadGoals();
   };
 
   const columns = useMemo<ColumnDef<Goal>[]>(() => {
@@ -85,7 +90,7 @@ export default function GoalsPage() {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
-          <Badge tone={row.original.status === "COMPLETED" ? "accent" : "warning"}>
+          <Badge tone={row.original.status === "CONCLUIDA" ? "accent" : "warning"}>
             {row.original.status}
           </Badge>
         ),
@@ -117,8 +122,17 @@ export default function GoalsPage() {
               variant="ghost"
               size="sm"
               onClick={async () => {
-                await api.deleteGoal(row.original.id);
-                await loadGoals();
+                setError(null);
+                try {
+                  await api.deleteGoal(row.original.id);
+                  await loadGoals();
+                } catch (err) {
+                  setError(
+                    err instanceof ApiError
+                      ? err.message
+                      : "Erro ao excluir meta."
+                  );
+                }
               }}
             >
               <Trash2 size={16} />
@@ -137,7 +151,7 @@ export default function GoalsPage() {
       currentValue: editing?.currentValue ?? 0,
       unit: editing?.unit ?? "h",
       weekStart: formatDate(editing?.weekStart ?? null),
-      status: editing?.status ?? "ACTIVE",
+      status: editing?.status ?? "ATIVA",
     },
     validatorAdapter: zodFormValidator<GoalFormValues>(),
     validators: {
@@ -155,7 +169,7 @@ export default function GoalsPage() {
       currentValue: editing?.currentValue ?? 0,
       unit: editing?.unit ?? "h",
       weekStart: formatDate(editing?.weekStart ?? null),
-      status: editing?.status ?? "ACTIVE",
+      status: editing?.status ?? "ATIVA",
     });
   }, [editing, form]);
 
@@ -168,12 +182,18 @@ export default function GoalsPage() {
         <p className="text-sm text-[rgb(var(--muted))]">
           Defina objetivos semanais claros.
         </p>
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-[rgba(var(--danger),0.4)] bg-[rgba(var(--danger),0.08)] px-4 py-3 text-xs text-[rgb(var(--danger))]">
+            {error}
+          </div>
+        ) : null}
         {isDemo ? (
           <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
             Demo somente leitura
           </p>
         ) : null}
         <form
+          key={editing?.id ?? "new"}
           className="mt-6 space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
@@ -256,14 +276,20 @@ export default function GoalsPage() {
               {(field) => (
                 <label className="block text-sm text-[rgb(var(--muted))]">
                   Semana
-                  <Input
-                    type="date"
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    onBlur={field.handleBlur}
-                    className="mt-2"
-                    disabled={isDemo}
-                  />
+                  <div className="relative mt-2">
+                    <Calendar
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]"
+                    />
+                    <Input
+                      type="date"
+                      value={field.state.value}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      onBlur={field.handleBlur}
+                      className="pl-10"
+                      disabled={isDemo}
+                    />
+                  </div>
                 </label>
               )}
             </form.Field>

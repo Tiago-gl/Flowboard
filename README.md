@@ -58,8 +58,8 @@ Dashboard/
 - User 1:1 DashboardLayout
 
 ### Regras, enums e indices
-- Enums: TaskStatus (TODO, IN_PROGRESS, DONE), TaskPriority (LOW, MEDIUM, HIGH),
-  HabitFrequency (DAILY, WEEKLY), GoalStatus (ACTIVE, COMPLETED)
+- Enums: TaskStatus (A_FAZER, EM_ANDAMENTO, FEITO), TaskPriority (BAIXA, MEDIA, ALTA),
+  HabitFrequency (DIARIA, SEMANAL), GoalStatus (ATIVA, CONCLUIDA)
 - Uniques: User.email, DashboardLayout.userId, HabitLog(habitId, date)
 - Indices: Task(userId, status), Task(userId, dueDate), Habit(userId, frequency), HabitLog(userId, date), Goal(userId, weekStart)
 

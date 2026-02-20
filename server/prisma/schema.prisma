@@ -7,51 +7,29 @@ datasource db {
   url      = env("DB_CONNECTION")
 }
 
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  DONE
-}
-
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-enum HabitFrequency {
-  DAILY
-  WEEKLY
-}
-
-enum GoalStatus {
-  ACTIVE
-  COMPLETED
-}
-
 model User {
-  id           String           @id @default(uuid())
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
   email        String           @unique
   passwordHash String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
-  tasks        Task[]
-  habits       Habit[]
-  goals        Goal[]
-  habitLogs    HabitLog[]
   layout       DashboardLayout?
+  goals        Goal[]
+  habits       Habit[]
+  habitLogs    HabitLog[]
+  tasks        Task[]
 
   @@index([createdAt])
 }
 
 model Task {
-  id          String       @id @default(uuid())
-  userId      String
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String       @db.Uuid
   title       String
   description String?
-  status      TaskStatus   @default(TODO)
-  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(A_FAZER)
+  priority    TaskPriority @default(MEDIA)
   dueDate     DateTime?
   sortOrder   Int          @default(0)
   completedAt DateTime?
@@ -64,8 +42,8 @@ model Task {
 }
 
 model Habit {
-  id            String         @id @default(uuid())
-  userId        String
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String         @db.Uuid
   name          String
   frequency     HabitFrequency
   targetPerWeek Int?
@@ -78,9 +56,9 @@ model Habit {
 }
 
 model HabitLog {
-  id        String   @id @default(uuid())
-  habitId   String
-  userId    String
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habitId   String   @db.Uuid
+  userId    String   @db.Uuid
   date      DateTime
   count     Int      @default(1)
   createdAt DateTime @default(now())
@@ -92,14 +70,14 @@ model HabitLog {
 }
 
 model Goal {
-  id           String     @id @default(uuid())
-  userId       String
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String     @db.Uuid
   title        String
   targetValue  Int
   currentValue Int        @default(0)
   unit         String
   weekStart    DateTime
-  status       GoalStatus @default(ACTIVE)
+  status       GoalStatus @default(ATIVA)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -108,10 +86,32 @@ model Goal {
 }
 
 model DashboardLayout {
-  id         String   @id @default(uuid())
-  userId     String   @unique
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @unique @db.Uuid
   layoutJson String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum TaskStatus {
+  A_FAZER
+  EM_ANDAMENTO
+  FEITO
+}
+
+enum TaskPriority {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+enum HabitFrequency {
+  DIARIA
+  SEMANAL
+}
+
+enum GoalStatus {
+  ATIVA
+  CONCLUIDA
 }

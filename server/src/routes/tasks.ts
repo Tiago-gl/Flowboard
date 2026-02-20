@@ -48,7 +48,7 @@ export async function taskRoutes(app: FastifyInstance) {
 
   app.post("/tasks", { preHandler: [app.authenticate] }, async (request) => {
     const payload = TaskInputSchema.parse(request.body);
-    const isDone = payload.status === "DONE";
+    const isDone = payload.status === "FEITO";
     const task = await prisma.task.create({
       data: {
         userId: request.user.id,
@@ -73,7 +73,7 @@ export async function taskRoutes(app: FastifyInstance) {
       reply.code(404);
       return { message: "Tarefa nao encontrada." };
     }
-    const isDone = payload.status === "DONE";
+    const isDone = payload.status === "FEITO";
     const task = await prisma.task.update({
       where: { id },
       data: {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { zodFormValidator } from "../lib/form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Calendar } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { Input, Textarea } from "../components/ui/Input";
@@ -54,18 +54,23 @@ export default function TasksPage() {
 
   const handleSubmit = async (values: TaskFormValues) => {
     if (isDemo) return;
-    const payload = {
-      ...values,
-      description: values.description?.trim() || null,
-      dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
-    };
-    if (editing) {
-      await api.updateTask(editing.id, payload);
-    } else {
-      await api.createTask(payload);
+    setError(null);
+    try {
+      const payload = {
+        ...values,
+        description: values.description?.trim() || null,
+        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
+      };
+      if (editing) {
+        await api.updateTask(editing.id, payload);
+      } else {
+        await api.createTask(payload);
+      }
+      setEditing(null);
+      await loadTasks();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Erro ao salvar tarefa.");
     }
-    setEditing(null);
-    await loadTasks();
   };
 
   const columns = useMemo<ColumnDef<Task>[]>(() => {
@@ -90,9 +95,9 @@ export default function TasksPage() {
         cell: ({ row }) => {
           const status = row.original.status;
           const tone =
-            status === "DONE"
+            status === "FEITO"
               ? "accent"
-              : status === "IN_PROGRESS"
+              : status === "EM_ANDAMENTO"
               ? "warning"
               : "muted";
           return <Badge tone={tone}>{status.replace("_", " ")}</Badge>;
@@ -103,7 +108,7 @@ export default function TasksPage() {
         header: "Prioridade",
         cell: ({ row }) => {
           const priority = row.original.priority;
-          const tone = priority === "HIGH" ? "danger" : "muted";
+          const tone = priority === "ALTA" ? "danger" : "muted";
           return <Badge tone={tone}>{priority}</Badge>;
         },
       },
@@ -113,7 +118,11 @@ export default function TasksPage() {
         cell: ({ row }) => (
           <span className="text-xs text-[rgb(var(--muted))]">
             {row.original.dueDate
-              ? new Date(row.original.dueDate).toLocaleDateString("pt-BR")
+              ? new Date(row.original.dueDate).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
               : "Sem prazo"}
           </span>
         ),
@@ -136,8 +145,17 @@ export default function TasksPage() {
               variant="ghost"
               size="sm"
               onClick={async () => {
-                await api.deleteTask(row.original.id);
-                await loadTasks();
+                setError(null);
+                try {
+                  await api.deleteTask(row.original.id);
+                  await loadTasks();
+                } catch (err) {
+                  setError(
+                    err instanceof ApiError
+                      ? err.message
+                      : "Erro ao excluir tarefa."
+                  );
+                }
               }}
             >
               <Trash2 size={16} />
@@ -153,8 +171,8 @@ export default function TasksPage() {
     defaultValues: {
       title: editing?.title ?? "",
       description: editing?.description ?? "",
-      status: editing?.status ?? "TODO",
-      priority: editing?.priority ?? "MEDIUM",
+      status: editing?.status ?? "A_FAZER",
+      priority: editing?.priority ?? "MEDIA",
       dueDate: formatDate(editing?.dueDate ?? null),
     },
     validatorAdapter: zodFormValidator<TaskFormValues>(),
@@ -170,8 +188,8 @@ export default function TasksPage() {
     form.reset({
       title: editing?.title ?? "",
       description: editing?.description ?? "",
-      status: editing?.status ?? "TODO",
-      priority: editing?.priority ?? "MEDIUM",
+      status: editing?.status ?? "A_FAZER",
+      priority: editing?.priority ?? "MEDIA",
       dueDate: formatDate(editing?.dueDate ?? null),
     });
   }, [editing, form]);
@@ -185,6 +203,11 @@ export default function TasksPage() {
         <p className="text-sm text-[rgb(var(--muted))]">
           Organize o que precisa ser entregue.
         </p>
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-[rgba(var(--danger),0.4)] bg-[rgba(var(--danger),0.08)] px-4 py-3 text-xs text-[rgb(var(--danger))]">
+            {error}
+          </div>
+        ) : null}
         {isDemo ? (
           <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
             Demo somente leitura
@@ -288,14 +311,20 @@ export default function TasksPage() {
             {(field) => (
               <label className="block text-sm text-[rgb(var(--muted))]">
                 Data limite
-                <Input
-                  type="date"
-                  value={field.state.value}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  onBlur={field.handleBlur}
-                  className="mt-2"
-                  disabled={isDemo}
-                />
+                <div className="relative mt-2">
+                  <Calendar
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--muted))]"
+                  />
+                  <Input
+                    type="date"
+                    value={field.state.value}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    onBlur={field.handleBlur}
+                    className="pl-10"
+                    disabled={isDemo}
+                  />
+                </div>
               </label>
             )}
           </form.Field>

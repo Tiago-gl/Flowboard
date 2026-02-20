@@ -9,8 +9,8 @@ export const RegisterSchema = AuthSchema.extend({
   name: z.string().min(2),
 });
 
-export const TaskStatusEnum = z.enum(["TODO", "IN_PROGRESS", "DONE"]);
-export const TaskPriorityEnum = z.enum(["LOW", "MEDIUM", "HIGH"]);
+export const TaskStatusEnum = z.enum(["A_FAZER", "EM_ANDAMENTO", "FEITO"]);
+export const TaskPriorityEnum = z.enum(["BAIXA", "MEDIA", "ALTA"]);
 
 export const TaskInputSchema = z.object({
   title: z.string().min(2),
@@ -20,7 +20,7 @@ export const TaskInputSchema = z.object({
   dueDate: z.string().datetime().nullable().optional(),
 });
 
-export const HabitFrequencyEnum = z.enum(["DAILY", "WEEKLY"]);
+export const HabitFrequencyEnum = z.enum(["DIARIA", "SEMANAL"]);
 
 export const HabitInputSchema = z.object({
   name: z.string().min(2),
@@ -33,7 +33,7 @@ export const HabitLogSchema = z.object({
   count: z.number().int().positive().optional(),
 });
 
-export const GoalStatusEnum = z.enum(["ACTIVE", "COMPLETED"]);
+export const GoalStatusEnum = z.enum(["ATIVA", "CONCLUIDA"]);
 
 export const GoalInputSchema = z.object({
   title: z.string().min(2),

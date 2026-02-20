@@ -45,17 +45,22 @@ export default function HabitsPage() {
 
   const handleSubmit = async (values: HabitFormValues) => {
     if (isDemo) return;
-    const payload = {
-      ...values,
-      targetPerWeek: values.targetPerWeek ? Number(values.targetPerWeek) : null,
-    };
-    if (editing) {
-      await api.updateHabit(editing.id, payload);
-    } else {
-      await api.createHabit(payload);
+    setError(null);
+    try {
+      const payload = {
+        ...values,
+        targetPerWeek: values.targetPerWeek ? Number(values.targetPerWeek) : null,
+      };
+      if (editing) {
+        await api.updateHabit(editing.id, payload);
+      } else {
+        await api.createHabit(payload);
+      }
+      setEditing(null);
+      await loadHabits();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Erro ao salvar habito.");
     }
-    setEditing(null);
-    await loadHabits();
   };
 
   const columns = useMemo<ColumnDef<Habit>[]>(() => {
@@ -116,8 +121,17 @@ export default function HabitsPage() {
               variant="ghost"
               size="sm"
               onClick={async () => {
-                await api.deleteHabit(row.original.id);
-                await loadHabits();
+                setError(null);
+                try {
+                  await api.deleteHabit(row.original.id);
+                  await loadHabits();
+                } catch (err) {
+                  setError(
+                    err instanceof ApiError
+                      ? err.message
+                      : "Erro ao excluir habito."
+                  );
+                }
               }}
             >
               <Trash2 size={16} />
@@ -132,7 +146,7 @@ export default function HabitsPage() {
   const form = useForm({
     defaultValues: {
       name: editing?.name ?? "",
-      frequency: editing?.frequency ?? "DAILY",
+      frequency: editing?.frequency ?? "DIARIA",
       targetPerWeek: editing?.targetPerWeek ?? 3,
     },
     validatorAdapter: zodFormValidator<HabitFormValues>(),
@@ -147,7 +161,7 @@ export default function HabitsPage() {
   useEffect(() => {
     form.reset({
       name: editing?.name ?? "",
-      frequency: editing?.frequency ?? "DAILY",
+      frequency: editing?.frequency ?? "DIARIA",
       targetPerWeek: editing?.targetPerWeek ?? 3,
     });
   }, [editing, form]);
@@ -161,12 +175,18 @@ export default function HabitsPage() {
         <p className="text-sm text-[rgb(var(--muted))]">
           Habitue-se a novas rotinas.
         </p>
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-[rgba(var(--danger),0.4)] bg-[rgba(var(--danger),0.08)] px-4 py-3 text-xs text-[rgb(var(--danger))]">
+            {error}
+          </div>
+        ) : null}
         {isDemo ? (
           <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[rgb(var(--accent))]">
             Demo somente leitura
           </p>
         ) : null}
         <form
+          key={editing?.id ?? "new"}
           className="mt-6 space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
