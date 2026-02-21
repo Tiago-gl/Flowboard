@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
@@ -23,40 +24,40 @@ export function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<string[]>(defaultCards);
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [tasksData, habitsData, goalsData, analyticsData, layout] =
-          await Promise.all([
-            api.getTasks({ pageSize: 5 }),
-            api.getHabits({ pageSize: 5 }),
-            api.getGoals({ pageSize: 5 }),
-            api.getWeeklyAnalytics(),
-            api.getLayout().catch(() => ({ cards: defaultCards })),
-          ]);
-        if (!active) return;
-        setTasks(tasksData.items);
-        setHabits(habitsData.items);
-        setGoals(goalsData.items);
-        setAnalytics(analyticsData);
-        if (layout?.cards?.length) {
-          const filtered = layout.cards.filter((id) =>
-            defaultCards.includes(id)
-          );
-          const missing = defaultCards.filter((id) => !filtered.includes(id));
-          setCards([...filtered, ...missing]);
-        }
-      } finally {
-        if (active) setLoading(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [tasksData, habitsData, goalsData, analyticsData, layout] =
+        await Promise.all([
+          api.getTasks({ pageSize: 5 }),
+          api.getHabits({ pageSize: 5 }),
+          api.getGoals({ pageSize: 5 }),
+          api.getWeeklyAnalytics(),
+          api.getLayout().catch(() => ({ cards: defaultCards })),
+        ]);
+      setTasks(tasksData.items);
+      setHabits(habitsData.items);
+      setGoals(goalsData.items);
+      setAnalytics(analyticsData);
+      if (layout?.cards?.length) {
+        const filtered = layout.cards.filter((id) =>
+          defaultCards.includes(id)
+        );
+        const missing = defaultCards.filter((id) => !filtered.includes(id));
+        setCards([...filtered, ...missing]);
       }
-    };
-    void load();
-    return () => {
-      active = false;
-    };
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load])
+  );
 
   const summary = useMemo(() => {
     const done = tasks.filter((task) => task.status === "FEITO").length;

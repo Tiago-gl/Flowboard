@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
-import { DateInput } from "../components/DateInput";
+import { DatePickerInput } from "../components/DatePickerInput";
 import { Screen } from "../components/Screen";
 import { api, ApiError } from "../lib/api";
 import { GoalFormSchema, GoalStatusEnum, type Goal } from "../lib/schemas";
@@ -154,10 +154,10 @@ export function GoalsScreen() {
             keyboardType="numeric"
           />
           <Input value={unit} onChangeText={setUnit} placeholder="Unidade" />
-          <DateInput
+          <DatePickerInput
             value={weekStart}
             onChangeText={setWeekStart}
-            placeholder="Semana (DD-MM-YYYY)"
+            placeholder="Semana"
           />
           <View style={styles.toggleGroup}>
             {STATUSES.map((value) => (

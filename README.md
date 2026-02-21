@@ -100,30 +100,29 @@ SQLite nao suporta RLS nativo. A politica foi aplicada na camada de API:
 - Reordenar cards -> layout salvo no backend.
 - Alternar tema -> persistencia local imediata.
 
-## 10. Setup local (envs, comandos)
-### Requisitos
-- Node.js 18+ (testado com Node 24)
+## 10. Acesso aos aplicativos
 
-### Back-end
-```
-cd server
-npm install
-npx prisma generate
-npx prisma migrate dev --name init
-npm run dev
-```
+### Web App (Desktop/Mobile)
+Acesse o dashboard direto no navegador:
+- **URL:** [Pagina Web](https://flowboard-tarefas.vercel.app)
 
-### Front-end
-```
-cd client
-npm install
-npm run dev
-```
+### App Mobile (Android)
+Baixe o APK e instale no seu dispositivo:
+- **Download APK:** [Download do APK](https://expo.dev/accounts/tiagglo/projects/mobile/builds/770d5c96-670a-4812-90cc-1b9374a67f58)
 
-### Variaveis de ambiente (server/.env)
-```
-DB_CONNECTION="postgresql://..."
-JWT_SECRET="change-me"
-CORS_ORIGIN="http://localhost:5173"
-PORT="4000"
-```
+**Recursos:**
+- ✅ Sincronização em tempo real entre web e mobile
+- ✅ Tema claro/escuro com persistência
+- ✅ Formulários validados com feedback visual
+- ✅ Dashboard personalizável (drag & drop no web)
+- ✅ Autenticação JWT com refresh automático
+
+---
+
+## 11. Stack completa
+
+**Frontend Web:** React + TypeScript + Vite + Tailwind CSS + TanStack (Form/Table) + dnd-kit + Recharts  
+**Frontend Mobile:** React Native + Expo + TypeScript  
+**Backend:** Node.js + Fastify + Prisma ORM  
+**Database:** PostgreSQL (Supabase)  
+**Hospedagem:** Vercel (API + Web), EAS Build (Mobile)

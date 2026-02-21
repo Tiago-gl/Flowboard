@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
-import { DateInput } from "../components/DateInput";
+import { DatePickerInput } from "../components/DatePickerInput";
 import { Screen } from "../components/Screen";
 import { api, ApiError } from "../lib/api";
 import {
@@ -156,10 +156,10 @@ export function TasksScreen() {
             onChangeText={setDescription}
             placeholder="Descricao (opcional)"
           />
-          <DateInput
+          <DatePickerInput
             value={dueDate}
             onChangeText={setDueDate}
-            placeholder="Data limite (DD-MM-YYYY)"
+            placeholder="Data limite"
           />
           <View style={styles.toggleGroup}>
             {STATUSES.map((value) => (
