@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { zodFormValidator } from "../lib/form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2, Calendar } from "lucide-react";
+import { Pencil, Trash2, Calendar, RotateCw, Plus } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -111,6 +111,34 @@ export default function GoalsPage() {
         header: "",
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                setError(null);
+                try {
+                  const newValue = row.original.currentValue + 1;
+                  await api.updateGoal(row.original.id, {
+                    title: row.original.title,
+                    targetValue: row.original.targetValue,
+                    currentValue: newValue,
+                    unit: row.original.unit,
+                    weekStart: row.original.weekStart,
+                    status: newValue >= row.original.targetValue ? "CONCLUIDA" : row.original.status,
+                  });
+                  await loadGoals();
+                } catch (err) {
+                  setError(
+                    err instanceof ApiError
+                      ? err.message
+                      : "Erro ao aumentar valor da meta."
+                  );
+                }
+              }}
+              title="Aumentar valor"
+            >
+              <Plus size={16} />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -336,12 +364,24 @@ export default function GoalsPage() {
         </form>
       </Card>
       <Card>
-        <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-          Lista de metas
-        </h2>
-        <p className="text-sm text-[rgb(var(--muted))]">
-          Ajuste o progresso conforme evolui.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+              Lista de metas
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted))]">
+              Ajuste o progresso conforme evolui.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => loadGoals()}
+            title="Atualizar"
+          >
+            <RotateCw size={16} />
+          </Button>
+        </div>
         <div className="mt-6">
           <DataTable
             columns={columns}

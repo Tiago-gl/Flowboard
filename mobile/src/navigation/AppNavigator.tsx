@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -18,6 +19,8 @@ import { AnalyticsScreen } from "../screens/AnalyticsScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { useTheme } from "../theme";
 import { useThemeStore } from "../store/themeStore";
+import { requestNotificationPermissions } from "../lib/notifications";
+import { initializeWidgets, clearAllWidgets } from "../lib/widgets";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -151,10 +154,23 @@ function Splash() {
 }
 
 export function AppNavigator() {
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = async () => {
+    await clearAllWidgets();
+    logout();
+  };
+
   const token = useAuthStore((state) => state.token);
   const hydrated = useAuthStore((state) => state.hydrated);
   const themeHydrated = useThemeStore((state) => state.hydrated);
   const { colors, isDark } = useTheme();
+
+  // Initialize notifications and widgets on app startup
+  useEffect(() => {
+    void requestNotificationPermissions();
+    void initializeWidgets();
+  }, []);
 
   if (!hydrated || !themeHydrated) {
     return <Splash />;
@@ -180,6 +196,8 @@ export function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+// Usar handleLogout no SettingsScreen (será necessário passar via context ou props)
 
 const styles = StyleSheet.create({
   splash: {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { zodFormValidator } from "../lib/form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2, RotateCw } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -275,12 +275,24 @@ export default function HabitsPage() {
         </form>
       </Card>
       <Card>
-        <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-          Lista de habitos
-        </h2>
-        <p className="text-sm text-[rgb(var(--muted))]">
-          Marque concluido e mantenha consistencia.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+              Lista de habitos
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted))]">
+              Marque concluido e mantenha consistencia.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => loadHabits()}
+            title="Atualizar"
+          >
+            <RotateCw size={16} />
+          </Button>
+        </div>
         <div className="mt-6">
           <DataTable
             columns={columns}

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { Button } from "../components/Button";
+import { IconButton } from "../components/IconButton";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { DatePickerInput } from "../components/DatePickerInput";
@@ -13,6 +14,9 @@ import {
   type Task,
 } from "../lib/schemas";
 import { useTheme } from "../theme";
+import { syncTasksToWidget } from "../lib/widgets";
+import { scheduleRemindersAt10AM } from "../lib/notifications";
+import { useErrorHandler } from "../hooks";
 
 const STATUSES = TaskStatusEnum.options;
 const PRIORITIES = TaskPriorityEnum.options;
@@ -35,9 +39,11 @@ const formatDateFromBR = (dateStr: string) => {
 
 export function TasksScreen() {
   const { colors } = useTheme();
+  const { error, setError, handleError, clearError } = useErrorHandler();
+  
   const [items, setItems] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -45,30 +51,40 @@ export function TasksScreen() {
   const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>("MEDIA");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getTasks({ pageSize: 50 });
-      setItems(data.items);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Nao foi possivel carregar tarefas.");
-      }
-    } finally {
-      setLoading(false);
+  const load = useCallback(async (pageNum: number = 1, isLoadMore: boolean = false) => {
+    if (!isLoadMore) {
+      setLoading(true);
+      clearError();
     }
-  };
+    try {
+      const data = await api.getTasks({ pageSize: PAGE_SIZE, page: pageNum });
+      const tasksList = pageNum === 1 ? data.items : [];
+      setItems((prev) => isLoadMore ? [...prev, ...data.items] : data.items);
+      if (pageNum === 1) {
+        setPage(1);
+        // Agendar notificações diárias às 10 da manhã apenas na primeira página
+        await scheduleRemindersAt10AM(tasksList, []);
+      }
+      // Sincronizar com widget
+      await syncTasksToWidget(data.items);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      if (!isLoadMore) {
+        setLoading(false);
+      }
+    }
+  }, [clearError, handleError]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
-  const handleCreate = async () => {
-    setError(null);
+  const handleCreate = useCallback(async () => {
+    clearError();
     const trimmedDate = dueDate.trim();
     const hasDate = trimmedDate.length > 0;
     const parsedDate = hasDate ? new Date(trimmedDate) : null;
@@ -101,9 +117,16 @@ export function TasksScreen() {
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         );
+        // Sincronizar com widget
+        const updatedItems = items.map((item) =>
+          item.id === updated.id ? updated : item
+        );
+        await syncTasksToWidget(updatedItems);
       } else {
         const created = await api.createTask(payload);
         setItems((prev) => [created, ...prev]);
+        // Sincronizar com widget
+        await syncTasksToWidget([created, ...items]);
       }
       setTitle("");
       setDescription("");
@@ -112,29 +135,40 @@ export function TasksScreen() {
       setPriority("MEDIA");
       setEditing(null);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Nao foi possivel salvar tarefa.");
-      }
+      handleError(err);
     } finally {
       setSaving(false);
     }
-  };
+  }, [title, description, dueDate, status, priority, editing, items, clearError, handleError]);
 
-  const handleDelete = async (id: string) => {
-    setError(null);
-    try {
-      await api.deleteTask(id);
-      setItems((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Nao foi possivel excluir tarefa.");
-      }
-    }
-  };
+  const handleDelete = useCallback((id: string, taskTitle: string) => {
+    Alert.alert(
+      "Deletar tarefa",
+      `Tem certeza que deseja deletar "${taskTitle}"?\nEsta ação não pode ser desfeita.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Deletar",
+          style: "destructive",
+          onPress: async () => {
+            setLoadingId(id);
+            clearError();
+            try {
+              await api.deleteTask(id);
+              const updatedItems = items.filter((item) => item.id !== id);
+              setItems(updatedItems);
+              // Sincronizar com widget
+              await syncTasksToWidget(updatedItems);
+            } catch (err) {
+              handleError(err);
+            } finally {
+              setLoadingId(null);
+            }
+          },
+        },
+      ]
+    );
+  }, [items, clearError, handleError]);
 
   return (
     <Screen>
@@ -241,7 +275,7 @@ export function TasksScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Suas tarefas
           </Text>
-          <Button title="Atualizar" onPress={load} variant="ghost" />
+          <IconButton icon="refresh" onPress={load} variant="ghost" size="md" />
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} />
@@ -266,26 +300,61 @@ export function TasksScreen() {
                   </Text>
                 </View>
                 <View style={styles.inlineActions}>
-                  <Button
-                    title="Editar"
+                  {item.status !== "FEITO" && (
+                    <IconButton
+                      icon={item.status === "A_FAZER" ? "play" : "checkmark-circle"}
+                      onPress={async () => {
+                        try {
+                          setLoadingId(item.id);
+                          const nextStatus = item.status === "A_FAZER" ? "EM_ANDAMENTO" : "FEITO";
+                          await api.updateTask(item.id, {
+                            title: item.title,
+                            description: item.description,
+                            status: nextStatus,
+                            priority: item.priority,
+                            dueDate: item.dueDate,
+                          });
+                          await load();
+                        } catch (err) {
+                          handleError(err);
+                        } finally {
+                          setLoadingId(null);
+                        }
+                      }}
+                      variant="primary"
+                      size="md"
+                    />
+                  )}
+                  <IconButton
+                    icon="pencil"
                     onPress={() => {
                       setEditing(item);
                       setTitle(item.title);
                       setDescription(item.description ?? "");
-                      setDueDate(item.dueDate ? formatDateToBR(item.dueDate.slice(0, 10)) : "");
+                      setDueDate(item.dueDate ? item.dueDate.slice(0, 10) : "");
                       setStatus(item.status);
                       setPriority(item.priority);
                     }}
                     variant="ghost"
+                    size="md"
                   />
-                  <Button
-                    title="Excluir"
-                    onPress={() => void handleDelete(item.id)}
+                  <IconButton
+                    icon="trash"
+                    onPress={() => handleDelete(item.id, item.title)}
+                    disabled={loadingId === item.id}
                     variant="ghost"
+                    size="md"
                   />
                 </View>
               </View>
             ))}
+            {items.length >= PAGE_SIZE && (
+              <Button
+                title={loading ? "Carregando..." : "Carregar mais"}
+                onPress={() => void load(page + 1, true)}
+                disabled={loading}
+              />
+            )}
           </View>
         )}
       </Card>

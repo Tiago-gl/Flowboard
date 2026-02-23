@@ -46,12 +46,18 @@ class ApiError extends Error {
 
 const request = async <T>(path: string, options: RequestOptions<T> = {}) => {
   const token = useAuthStore.getState().token;
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  
+  // Só adiciona Content-Type se há um body
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
+  }
+  
   const response = await fetch(`${API_URL}${path}`, {
     method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 

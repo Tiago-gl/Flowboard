@@ -38,15 +38,21 @@ export async function goalRoutes(app: FastifyInstance) {
 
   app.post("/goals", { preHandler: [app.authenticate] }, async (request) => {
     const payload = GoalInputSchema.parse(request.body);
+    const currentValue = payload.currentValue ?? 0;
+    const targetValue = payload.targetValue;
+    
+    // Auto-conclusão se já atingiu o alvo
+    const status = currentValue >= targetValue ? "CONCLUIDA" : payload.status;
+    
     const goal = await prisma.goal.create({
       data: {
         userId: request.user.id,
         title: payload.title,
-        targetValue: payload.targetValue,
-        currentValue: payload.currentValue ?? 0,
+        targetValue: targetValue,
+        currentValue: currentValue,
         unit: payload.unit,
-        weekStart: new Date(payload.weekStart),
-        status: payload.status,
+        weekStart: payload.weekStart,
+        status: status,
       },
     });
     return goal;
@@ -62,15 +68,25 @@ export async function goalRoutes(app: FastifyInstance) {
       reply.code(404);
       return { message: "Meta nao encontrada." };
     }
+    
+    const currentValue = payload.currentValue ?? 0;
+    const targetValue = payload.targetValue;
+    
+    // Auto-conclusão se atingiu o alvo
+    let status = payload.status;
+    if (currentValue >= targetValue) {
+      status = "CONCLUIDA";
+    }
+    
     const goal = await prisma.goal.update({
       where: { id },
       data: {
         title: payload.title,
-        targetValue: payload.targetValue,
-        currentValue: payload.currentValue ?? 0,
+        targetValue: targetValue,
+        currentValue: currentValue,
         unit: payload.unit,
-        weekStart: new Date(payload.weekStart),
-        status: payload.status,
+        weekStart: payload.weekStart,
+        status: status,
       },
     });
     return goal;

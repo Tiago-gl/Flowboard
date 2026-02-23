@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { Button } from "../components/Button";
+import { IconButton } from "../components/IconButton";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { DatePickerInput } from "../components/DatePickerInput";
@@ -8,6 +9,9 @@ import { Screen } from "../components/Screen";
 import { api, ApiError } from "../lib/api";
 import { GoalFormSchema, GoalStatusEnum, type Goal } from "../lib/schemas";
 import { useTheme } from "../theme";
+import { syncGoalsToWidget } from "../lib/widgets";
+import { scheduleRemindersAt10AM } from "../lib/notifications";
+import { useErrorHandler } from "../hooks";
 
 const STATUSES = GoalStatusEnum.options;
 
@@ -29,9 +33,11 @@ const formatDateFromBR = (dateStr: string) => {
 
 export function GoalsScreen() {
   const { colors } = useTheme();
+  const { error, setError, handleError, clearError } = useErrorHandler();
+  
   const [items, setItems] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [targetValue, setTargetValue] = useState("");
   const [currentValue, setCurrentValue] = useState("");
@@ -40,30 +46,40 @@ export function GoalsScreen() {
   const [status, setStatus] = useState<(typeof STATUSES)[number]>("ATIVA");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getGoals({ pageSize: 50 });
-      setItems(data.items);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Nao foi possivel carregar metas.");
-      }
-    } finally {
-      setLoading(false);
+  const load = useCallback(async (pageNum: number = 1, isLoadMore: boolean = false) => {
+    if (!isLoadMore) {
+      setLoading(true);
+      clearError();
     }
-  };
+    try {
+      const data = await api.getGoals({ pageSize: PAGE_SIZE, page: pageNum });
+      const goalsList = pageNum === 1 ? data.items : [];
+      setItems((prev) => isLoadMore ? [...prev, ...data.items] : data.items);
+      if (pageNum === 1) {
+        setPage(1);
+        // Agendar notificações diárias às 10 da manhã apenas na primeira página
+        await scheduleRemindersAt10AM([], goalsList);
+      }
+      // Sincronizar com widget
+      await syncGoalsToWidget(data.items);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      if (!isLoadMore) {
+        setLoading(false);
+      }
+    }
+  }, [clearError, handleError]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
-  const handleCreate = async () => {
-    setError(null);
+  const handleCreate = useCallback(async () => {
+    clearError();
     const parsedTarget = Number(targetValue);
     const parsedCurrent = currentValue ? Number(currentValue) : undefined;
     const trimmedWeek = weekStart.trim();
@@ -94,9 +110,16 @@ export function GoalsScreen() {
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         );
+        // Sincronizar com widget
+        const updatedItems = items.map((item) =>
+          item.id === updated.id ? updated : item
+        );
+        await syncGoalsToWidget(updatedItems);
       } else {
         const created = await api.createGoal(payload);
         setItems((prev) => [created, ...prev]);
+        // Sincronizar com widget
+        await syncGoalsToWidget([created, ...items]);
       }
       setTitle("");
       setTargetValue("");
@@ -106,29 +129,40 @@ export function GoalsScreen() {
       setStatus("ATIVA");
       setEditing(null);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Nao foi possivel salvar meta.");
-      }
+      handleError(err);
     } finally {
       setSaving(false);
     }
-  };
+  }, [title, targetValue, currentValue, unit, weekStart, status, editing, items, clearError, handleError]);
 
-  const handleDelete = async (id: string) => {
-    setError(null);
-    try {
-      await api.deleteGoal(id);
-      setItems((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Nao foi possivel excluir meta.");
-      }
-    }
-  };
+  const handleDelete = useCallback((id: string, goalTitle: string) => {
+    Alert.alert(
+      "Deletar meta",
+      `Tem certeza que deseja deletar "${goalTitle}"?\nEsta ação não pode ser desfeita.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Deletar",
+          style: "destructive",
+          onPress: async () => {
+            setLoadingId(id);
+            clearError();
+            try {
+              await api.deleteGoal(id);
+              const updatedItems = items.filter((item) => item.id !== id);
+              setItems(updatedItems);
+              // Sincronizar com widget
+              await syncGoalsToWidget(updatedItems);
+            } catch (err) {
+              handleError(err);
+            } finally {
+              setLoadingId(null);
+            }
+          },
+        },
+      ]
+    );
+  }, [items, clearError, handleError]);
 
   return (
     <Screen>
@@ -215,7 +249,7 @@ export function GoalsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Suas metas
           </Text>
-          <Button title="Atualizar" onPress={load} variant="ghost" />
+          <IconButton icon="refresh" onPress={load} variant="ghost" size="md" />
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} />
@@ -239,27 +273,61 @@ export function GoalsScreen() {
                   </Text>
                 </View>
                 <View style={styles.inlineActions}>
-                  <Button
-                    title="Editar"
+                  <IconButton
+                    icon="add"
+                    onPress={async () => {
+                      try {
+                        setLoadingId(item.id);
+                        const newValue = item.currentValue + 1;
+                        await api.updateGoal(item.id, {
+                          title: item.title,
+                          targetValue: item.targetValue,
+                          currentValue: newValue,
+                          unit: item.unit,
+                          weekStart: item.weekStart,
+                          status: newValue >= item.targetValue ? "CONCLUIDA" : item.status,
+                        });
+                        await load();
+                      } catch (err) {
+                        handleError(err);
+                      } finally {
+                        setLoadingId(null);
+                      }
+                    }}
+                    variant="primary"
+                    size="md"
+                  />
+                  <IconButton
+                    icon="pencil"
                     onPress={() => {
                       setEditing(item);
                       setTitle(item.title);
                       setTargetValue(String(item.targetValue));
                       setCurrentValue(String(item.currentValue));
                       setUnit(item.unit);
-                      setWeekStart(formatDateToBR(item.weekStart.slice(0, 10)));
+                      setWeekStart(item.weekStart.slice(0, 10));
                       setStatus(item.status);
                     }}
                     variant="ghost"
+                    size="md"
                   />
-                  <Button
-                    title="Excluir"
-                    onPress={() => void handleDelete(item.id)}
+                  <IconButton
+                    icon="trash"
+                    onPress={() => handleDelete(item.id, item.title)}
+                    disabled={loadingId === item.id}
                     variant="ghost"
+                    size="md"
                   />
                 </View>
               </View>
             ))}
+            {items.length >= PAGE_SIZE && (
+              <Button
+                title={loading ? "Carregando..." : "Carregar mais"}
+                onPress={() => void load(page + 1, true)}
+                disabled={loading}
+              />
+            )}
           </View>
         )}
       </Card>

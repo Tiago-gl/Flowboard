@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import Svg, { Path, Rect } from "react-native-svg";
 import { useTheme } from "../theme";
@@ -7,6 +7,7 @@ type DatePickerInputProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
+  allowPastDates?: boolean;
 };
 
 const formatDateToBR = (date: Date): string => {
@@ -38,6 +39,7 @@ export function DatePickerInput({
   value,
   onChangeText,
   placeholder = "Selecione uma data",
+  allowPastDates = false,
 }: DatePickerInputProps) {
   const { colors } = useTheme();
 
@@ -53,6 +55,20 @@ export function DatePickerInput({
         value: currentDate,
         onChange: (event, date) => {
           if (event.type === "set" && date) {
+            // Validar se data é no passado
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            date.setHours(0, 0, 0, 0);
+
+            if (!allowPastDates && date < today) {
+              Alert.alert(
+                "Data inválida",
+                "Não é possível selecionar datas no passado.",
+                [{ text: "OK" }]
+              );
+              return;
+            }
+
             const year = date.getFullYear();
             const month = date.getMonth() + 1;
             const day = date.getDate();

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { zodFormValidator } from "../lib/form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2, Calendar } from "lucide-react";
+import { Pencil, Trash2, Calendar, RotateCw, Play, CheckCircle } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { Input, Textarea } from "../components/ui/Input";
@@ -134,6 +134,35 @@ export default function TasksPage() {
         header: "",
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
+            {row.original.status !== "FEITO" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    const nextStatus = row.original.status === "A_FAZER" ? "EM_ANDAMENTO" : "FEITO";
+                    await api.updateTask(row.original.id, {
+                      title: row.original.title,
+                      description: row.original.description,
+                      status: nextStatus,
+                      priority: row.original.priority,
+                      dueDate: row.original.dueDate,
+                    });
+                    await loadTasks();
+                  } catch (err) {
+                    setError(
+                      err instanceof ApiError
+                        ? err.message
+                        : "Erro ao atualizar status da tarefa."
+                    );
+                  }
+                }}
+                title={row.original.status === "A_FAZER" ? "Iniciar" : "Concluir"}
+              >
+                {row.original.status === "A_FAZER" ? <Play size={16} /> : <CheckCircle size={16} />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -346,12 +375,24 @@ export default function TasksPage() {
         </form>
       </Card>
       <Card>
-        <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
-          Lista de tarefas
-        </h2>
-        <p className="text-sm text-[rgb(var(--muted))]">
-          Ordene, filtre e acompanhe seu progresso.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[rgb(var(--text))]">
+              Lista de tarefas
+            </h2>
+            <p className="text-sm text-[rgb(var(--muted))]">
+              Ordene, filtre e acompanhe seu progresso.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => loadTasks()}
+            title="Atualizar"
+          >
+            <RotateCw size={16} />
+          </Button>
+        </div>
         <div className="mt-6">
           <DataTable
             columns={columns}

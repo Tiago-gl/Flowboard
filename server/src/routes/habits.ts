@@ -87,7 +87,7 @@ export async function habitRoutes(app: FastifyInstance) {
         where: {
           habitId_date: {
             habitId: id,
-            date: new Date(payload.date),
+            date: payload.date,
           },
         },
         update: {
@@ -96,7 +96,7 @@ export async function habitRoutes(app: FastifyInstance) {
         create: {
           habitId: id,
           userId: request.user.id,
-          date: new Date(payload.date),
+          date: payload.date,
           count: payload.count ?? 1,
         },
       });

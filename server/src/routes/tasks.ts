@@ -56,7 +56,7 @@ export async function taskRoutes(app: FastifyInstance) {
         description: payload.description ?? null,
         status: payload.status,
         priority: payload.priority,
-        dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
+        dueDate: payload.dueDate ?? null,
         completedAt: isDone ? new Date() : null,
       },
     });
@@ -81,7 +81,7 @@ export async function taskRoutes(app: FastifyInstance) {
         description: payload.description ?? null,
         status: payload.status,
         priority: payload.priority,
-        dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
+        dueDate: payload.dueDate ?? null,
         completedAt: isDone ? existing.completedAt ?? new Date() : null,
       },
     });

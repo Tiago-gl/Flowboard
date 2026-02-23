@@ -1,12 +1,12 @@
 import { PropsWithChildren } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   StyleProp,
   StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../theme";
 

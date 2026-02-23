@@ -1,15 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Screen } from "../components/Screen";
 import { useAuthStore } from "../store/authStore";
 import { useTheme } from "../theme";
 import type { ThemeMode } from "../store/themeStore";
+import { getWidgetTasksPreview, getWidgetGoalsPreview, clearAllWidgets } from "../lib/widgets";
 
 export function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { colors, mode, setMode } = useTheme();
+
+  const handleLogout = async () => {
+    await clearAllWidgets();
+    logout();
+  };
 
   const modes: { key: ThemeMode; label: string }[] = [
     { key: "system", label: "Sistema" },
@@ -66,8 +72,25 @@ export function SettingsScreen() {
         </Text>
       </Card>
       <Card>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Widget</Text>
+        <Text style={[styles.widgetDescription, { color: colors.muted }]}>
+          O widget da tela inicial mostra suas tarefas e metas em andamento sem
+          precisar abrir o aplicativo.
+        </Text>
+        <Button
+          title="Ver Prévia do Widget"
+          onPress={async () => {
+            const tasks = await getWidgetTasksPreview();
+            const goals = await getWidgetGoalsPreview();
+            Alert.alert("Prévia do Widget", 
+              `Tarefas: ${tasks.length}\nMetas: ${goals.length}\n\nOs widgets serão atualizados automaticamente sempre que você criar, editar ou deletar uma tarefa ou meta.`
+            );
+          }}
+        />
+      </Card>
+      <Card>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Sessao</Text>
-        <Button title="Sair" onPress={logout} />
+        <Button title="Sair" onPress={handleLogout} />
       </Card>
     </Screen>
   );
@@ -107,6 +130,11 @@ const styles = StyleSheet.create({
   },
   modeHint: {
     fontSize: 12,
+  },
+  widgetDescription: {
+    fontSize: 12,
+    marginBottom: 12,
+    lineHeight: 18,
   },
 });
 
