@@ -108,7 +108,7 @@ Acesse o dashboard direto no navegador:
 
 ### App Mobile (Android)
 Baixe o APK e instale no seu dispositivo:
-- **Download APK:** [Download do APK](https://expo.dev/accounts/tiagglo/projects/mobile/builds/770d5c96-670a-4812-90cc-1b9374a67f58)
+- **Download APK:** [Download do APK](https://expo.dev/accounts/tiagglo/projects/mobile/builds/12bff3df-f3fc-47ec-9103-75acf8604c29)
 
 **Recursos:**
 - ✅ Sincronização em tempo real entre web e mobile
