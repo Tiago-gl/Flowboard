@@ -14,7 +14,6 @@ import {
   type Task,
 } from "../lib/schemas";
 import { useTheme } from "../theme";
-import { syncTasksToWidget } from "../lib/widgets";
 import { scheduleRemindersAt10AM } from "../lib/notifications";
 import { useErrorHandler } from "../hooks";
 
@@ -68,8 +67,6 @@ export function TasksScreen() {
         // Agendar notificações diárias às 10 da manhã apenas na primeira página
         await scheduleRemindersAt10AM(tasksList, []);
       }
-      // Sincronizar com widget
-      await syncTasksToWidget(data.items);
     } catch (err) {
       handleError(err);
     } finally {
@@ -117,16 +114,9 @@ export function TasksScreen() {
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         );
-        // Sincronizar com widget
-        const updatedItems = items.map((item) =>
-          item.id === updated.id ? updated : item
-        );
-        await syncTasksToWidget(updatedItems);
       } else {
         const created = await api.createTask(payload);
         setItems((prev) => [created, ...prev]);
-        // Sincronizar com widget
-        await syncTasksToWidget([created, ...items]);
       }
       setTitle("");
       setDescription("");
@@ -157,8 +147,6 @@ export function TasksScreen() {
               await api.deleteTask(id);
               const updatedItems = items.filter((item) => item.id !== id);
               setItems(updatedItems);
-              // Sincronizar com widget
-              await syncTasksToWidget(updatedItems);
             } catch (err) {
               handleError(err);
             } finally {

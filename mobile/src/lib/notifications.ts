@@ -13,6 +13,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,       // Mostrar alerta visual
     shouldPlaySound: true,       // Reproduzir som
     shouldSetBadge: true,        // Mostrar badge no app
+    shouldShowBanner: true,      // Mostrar banner no iOS
+    shouldShowList: true,        // Mostrar na lista de notificações
   }),
 });
 
@@ -137,6 +139,7 @@ export const scheduleNotificationForDate = async (
 
     // Agenda para o dia limite às 10:00 da manhã
     return scheduleNotification(title, body, {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: secondsUntilNotification,
     });
   } catch (error) {
@@ -216,6 +219,7 @@ export const scheduleRemindersAt10AM = async (tasks: any[], goals: any[]) => {
           `📋 Tarefa: ${task.title}`,
           `Data limite: ${dueDate.toLocaleDateString("pt-BR")} - Prioridade: ${task.priority}`,
           {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: secondsUntil,
           }
         );
@@ -243,6 +247,7 @@ export const scheduleRemindersAt10AM = async (tasks: any[], goals: any[]) => {
           `🎯 Meta: ${goal.title}`,
           `${goal.currentValue}/${goal.targetValue} ${goal.unit} (${progress}%) - Até ${weekStart.toLocaleDateString("pt-BR")}`,
           {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: secondsUntil,
           }
         );

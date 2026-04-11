@@ -9,7 +9,6 @@ import { Screen } from "../components/Screen";
 import { api, ApiError } from "../lib/api";
 import { GoalFormSchema, GoalStatusEnum, type Goal } from "../lib/schemas";
 import { useTheme } from "../theme";
-import { syncGoalsToWidget } from "../lib/widgets";
 import { scheduleRemindersAt10AM } from "../lib/notifications";
 import { useErrorHandler } from "../hooks";
 
@@ -63,8 +62,6 @@ export function GoalsScreen() {
         // Agendar notificações diárias às 10 da manhã apenas na primeira página
         await scheduleRemindersAt10AM([], goalsList);
       }
-      // Sincronizar com widget
-      await syncGoalsToWidget(data.items);
     } catch (err) {
       handleError(err);
     } finally {
@@ -110,16 +107,9 @@ export function GoalsScreen() {
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         );
-        // Sincronizar com widget
-        const updatedItems = items.map((item) =>
-          item.id === updated.id ? updated : item
-        );
-        await syncGoalsToWidget(updatedItems);
       } else {
         const created = await api.createGoal(payload);
         setItems((prev) => [created, ...prev]);
-        // Sincronizar com widget
-        await syncGoalsToWidget([created, ...items]);
       }
       setTitle("");
       setTargetValue("");
@@ -151,8 +141,6 @@ export function GoalsScreen() {
               await api.deleteGoal(id);
               const updatedItems = items.filter((item) => item.id !== id);
               setItems(updatedItems);
-              // Sincronizar com widget
-              await syncGoalsToWidget(updatedItems);
             } catch (err) {
               handleError(err);
             } finally {

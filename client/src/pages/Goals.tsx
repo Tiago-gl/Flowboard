@@ -16,7 +16,11 @@ import type { Goal, GoalFormValues } from "../lib/schemas";
 
 const formatDate = (value?: string | null) => {
   if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
+  const date = new Date(value);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
 };
 
 export default function GoalsPage() {
@@ -56,7 +60,7 @@ export default function GoalsPage() {
         ...values,
         targetValue: Number(values.targetValue),
         currentValue: Number(values.currentValue ?? 0),
-        weekStart: new Date(values.weekStart).toISOString(),
+        weekStart: formatDate(values.weekStart),
       };
       if (editing) {
         await api.updateGoal(editing.id, payload);

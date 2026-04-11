@@ -14,6 +14,13 @@ import { demoHabits, useDemoMode } from "../lib/demo";
 import { HabitFormSchema, HabitFrequencyEnum } from "../lib/schemas";
 import type { Habit, HabitFormValues } from "../lib/schemas";
 
+const formatDate = (date: Date) => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 export default function HabitsPage() {
   const isDemo = useDemoMode();
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -103,7 +110,7 @@ export default function HabitsPage() {
               onClick={() =>
                 api
                   .logHabit(row.original.id, {
-                    date: new Date().toISOString(),
+                    date: formatDate(new Date()),
                   })
                   .then(loadHabits)
               }

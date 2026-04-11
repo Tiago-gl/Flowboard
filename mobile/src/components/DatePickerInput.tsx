@@ -74,7 +74,7 @@ export function DatePickerInput({
             const day = date.getDate();
             const monthStr = String(month).padStart(2, "0");
             const dayStr = String(day).padStart(2, "0");
-            onChangeText(`${year}-${monthStr}-${dayStr}`);
+            onChangeText(`${dayStr}-${monthStr}-${year}`);
           }
         },
         mode: "date",

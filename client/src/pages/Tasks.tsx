@@ -20,7 +20,11 @@ import type { Task, TaskFormValues } from "../lib/schemas";
 
 const formatDate = (value?: string | null) => {
   if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
+  const date = new Date(value);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
 };
 
 export default function TasksPage() {
@@ -59,7 +63,7 @@ export default function TasksPage() {
       const payload = {
         ...values,
         description: values.description?.trim() || null,
-        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
+        dueDate: values.dueDate ? formatDate(values.dueDate) : null,
       };
       if (editing) {
         await api.updateTask(editing.id, payload);
